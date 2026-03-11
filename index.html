@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Carrom Board 650x650</title>
+
+<style>
+    body {
+        margin: 0;
+        background: #111;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: Arial, sans-serif;
+        color: white;
+    }
+
+    .board {
+        position: relative;
+        width: 650px;
+        height: 650px;
+        background: #d9b37a;
+        border-radius: 22px;
+        box-shadow: 0 0 50px rgba(0,0,0,0.6);
+        overflow: hidden;
+    }
+
+    /* Red border stripes */
+    .board::before {
+        content: "";
+        position: absolute;
+        inset: 25px;
+        border: 7px solid #b30000;
+        border-radius: 14px;
+    }
+
+    /* Pockets */
+    .pocket {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        background: black;
+        border-radius: 50%;
+    }
+    .tl { top: -15px; left: -15px; }
+    .tr { top: -15px; right: -15px; }
+    .bl { bottom: -15px; left: -15px; }
+    .br { bottom: -15px; right: -15px; }
+
+    /* Coins (correct size like your reference) */
+    .coin {
+        position: absolute;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    }
+    .white { background: radial-gradient(circle, #fff, #ccc); }
+    .black { background: radial-gradient(circle, #444, #111); }
+    .red   { background: radial-gradient(circle, #ff4d4d, #b30000); }
+
+    /* Striker (correct size + glow) */
+    .striker {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #fff, #bbb);
+        box-shadow: 0 0 25px rgba(255,255,255,0.9);
+        transform: translate(-50%, -50%);
+    }
+
+    /* Aim line */
+    .aim {
+        position: absolute;
+        height: 3px;
+        background: rgba(0,255,0,0.7);
+        transform-origin: left center;
+        pointer-events: none;
+    }
+
+    /* Controls */
+    .controls {
+        margin-top: 20px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    input[type=range] {
+        width: 200px;
+    }
+
+    button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #ffb347, #ff5f6d);
+        color: #111;
+        font-weight: bold;
+        cursor: pointer;
+    }
+</style>
+</head>
+
+<body>
+
+<div>
+    <div class="board" id="board">
+
+        <!-- Pockets -->
+        <div class="pocket tl"></div>
+        <div class="pocket tr"></div>
+        <div class="pocket bl"></div>
+        <div class="pocket br"></div>
+
+        <!-- PERFECT CENTER FLOWER PATTERN (Correct Row Style) -->
+        <!-- Queen -->
+        <div class="coin red" style="top:50%; left:50%; transform:translate(-50%,-50%);"></div>
+
+        <!-- White coins -->
+        <div class="coin white" style="top:50%; left:50%; transform:translate(-90%,-50%);"></div>
+        <div class="coin white" style="top:50%; left:50%; transform:translate(-45%,-95%);"></div>
+        <div class="coin white" style="top:50%; left:50%; transform:translate(5%,-95%);"></div>
+        <div class="coin white" style="top:50%; left:50%; transform:translate(50%,-50%);"></div>
+        <div class="coin white" style="top:50%; left:50%; transform:translate(5%,-5%);"></div>
+        <div class="coin white" style="top:50%; left:50%; transform:translate(-45%,-5%);"></div>
+
+        <!-- Black coins -->
+        <div class="coin black" style="top:50%; left:50%; transform:translate(-45%,-50%);"></div>
+        <div class="coin black" style="top:50%; left:50%; transform:translate(-20%,-75%);"></div>
+        <div class="coin black" style="top:50%; left:50%; transform:translate(20%,-75%);"></div>
+        <div class="coin black" style="top:50%; left:50%; transform:translate(45%,-50%);"></div>
+        <div class="coin black" style="top:50%; left:50%; transform:translate(20%,-25%);"></div>
+        <div class="coin black" style="top:50%; left:50%; transform:translate(-20%,-25%);"></div>
+
+        <!-- Striker -->
+        <div class="striker" id="striker"></div>
+
+        <!-- Aim line -->
+        <div class="aim" id="aim"></div>
+    </div>
+
+    <div class="controls">
+        Power <input type="range" id="power" min="10" max="100" value="40">
+        <button id="shoot">Shoot</button>
+    </div>
+</div>
+
+<script>
+    const board = document.getElementById("board");
+    const striker = document.getElementById("striker");
+    const aim = document.getElementById("aim");
+    const power = document.getElementById("power");
+
+    function resetStriker() {
+        striker.dataset.x = 325;
+        striker.dataset.y = 580;
+        striker.style.left = "325px";
+        striker.style.top = "580px";
+        aim.style.opacity = 0;
+    }
+
+    resetStriker();
+
+    // Drag striker left-right
+    let drag = false;
+
+    striker.addEventListener("mousedown", () => drag = true);
+    window.addEventListener("mouseup", () => drag = false);
+
+    window.addEventListener("mousemove", e => {
+        if (!drag) return;
+        const rect = board.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        x = Math.max(60, Math.min(590, x));
+        striker.dataset.x = x;
+        striker.style.left = x + "px";
+    });
+
+    // Aim line
+    board.addEventListener("mousemove", e => {
+        const rect = board.getBoundingClientRect();
+        const sx = parseFloat(striker.dataset.x);
+        const sy = parseFloat(striker.dataset.y);
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        const dx = mx - sx;
+        const dy = my - sy;
+        const angle = Math.atan2(dy, dx);
+
+        aim.style.left = sx + "px";
+        aim.style.top = sy + "px";
+        aim.style.width = "180px";
+        aim.style.transform = `rotate(${angle}rad)`;
+        aim.style.opacity = 1;
+
+        striker.dataset.angle = angle;
+    });
+
+    // Shoot
+    document.getElementById("shoot").onclick = () => {
+        const angle = parseFloat(striker.dataset.angle || -Math.PI/2);
+        const p = power.value;
+        let step = 0;
+
+        const startX = parseFloat(striker.dataset.x);
+        const startY = parseFloat(striker.dataset.y);
+
+        const dx = Math.cos(angle) * p * 0.4;
+        const dy = Math.sin(angle) * p * 0.4;
+
+        aim.style.opacity = 0;
+
+        const interval = setInterval(() => {
+            step++;
+            striker.style.left = (startX + dx * step) + "px";
+            striker.style.top  = (startY + dy * step) + "px";
+
+            if (step > 25) {
+                clearInterval(interval);
+                setTimeout(resetStriker, 400);
+            }
+        }, 16);
+    };
+</script>
+
+</body>
+</html>
